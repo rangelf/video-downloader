@@ -7,28 +7,17 @@ def baixar_youtube(url):
     output_path = "videos"
     os.makedirs(output_path, exist_ok=True)
 
-    # Garante que a pasta de cookies exista
-    cookie_path = "cookies/youtube_cookies.txt"
-    if not os.path.exists(cookie_path):
-        print("⚠️ Arquivo de cookies não encontrado em:", cookie_path)
-        print("→ Use uma extensão como 'Get cookies.txt' para exportar os cookies do YouTube.")
-        return
-
     ydl_opts = {
         'outtmpl': f'{output_path}/%(title)s.%(ext)s',
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
         'merge_output_format': 'mp4',
-        'cookiefile': cookie_path  # ← cookies aqui
+        'cookiefile': 'cookies/youtube_cookies.txt',  # <-- aqui o arquivo de cookies
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         print("📥 Baixando vídeo do YouTube...")
-        try:
-            ydl.download([url])
-            print("✅ Download concluído!")
-        except Exception as e:
-            print("❌ Erro ao baixar o vídeo do YouTube:")
-            print(e)
+        ydl.download([url])
+        print("✅ Download concluído!")
 
 def baixar_stories(usuario, senha):
     loader = instaloader.Instaloader(dirname_pattern="stories/{target}")
