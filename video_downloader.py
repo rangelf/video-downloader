@@ -1,64 +1,64 @@
 import os
 import requests
-from pytube import YouTube
 import instaloader
+import yt_dlp
 
-def baixar_youtube(url, output_path='videos'):
-    yt = YouTube(url)
-    video = yt.streams.filter(file_extension='mp4', progressive=True).order_by('resolution').desc().first()
-    print(f"Baixando YouTube: {yt.title}")
-    video.download(output_path)
-    print("✔ Download do YouTube concluído.")
-
-def baixar_instagram_story(username, output_path='videos'):
-    L = instaloader.Instaloader(dirname_pattern=output_path, download_video_thumbnails=False)
-
-    # Login necessário
-    user = input("Seu usuário do Instagram: ")
-    senha = input("Sua senha do Instagram: ")
-    try:
-        L.login(user, senha)
-    except Exception as e:
-        print(f"Erro ao logar: {e}")
-        return
-
-    try:
-        profile = instaloader.Profile.from_username(L.context, username)
-        print(f"Baixando stories de: {username}")
-        for story in L.get_stories(userids=[profile.userid]):
-            for item in story.get_items():
-                L.download_storyitem(item, f"{output_path}/{username}_stories")
-        print("✔ Download dos stories concluído.")
-    except Exception as e:
-        print(f"Erro ao baixar stories: {e}")
-
-def baixar_direto(url, output_path='videos'):
-    local_filename = url.split('/')[-1]
+def baixar_youtube(url):
+    output_path = "videos"
     os.makedirs(output_path, exist_ok=True)
-    path = os.path.join(output_path, local_filename)
 
-    r = requests.get(url, stream=True)
-    with open(path, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-    print("✔ Download direto concluído.")
+    ydl_opts = {
+        'outtmpl': f'{output_path}/%(title)s.%(ext)s',
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
+        'merge_output_format': 'mp4'
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        print("📥 Baixando vídeo do YouTube...")
+        ydl.download([url])
+        print("✅ Download concluído!")
+
+def baixar_stories(usuario, senha):
+    loader = instaloader.Instaloader(dirname_pattern="stories/{target}")
+    print("🔐 Fazendo login no Instagram...")
+    loader.login(usuario, senha)
+
+    perfil = input("Digite o nome do perfil (sem @): ")
+    print(f"📥 Baixando stories de @{perfil}...")
+    loader.download_stories(userids=[perfil])
+    print("✅ Stories baixados!")
+
+def baixar_link_direto(url):
+    output_path = "downloads"
+    os.makedirs(output_path, exist_ok=True)
+
+    print("📥 Baixando arquivo do link direto...")
+    r = requests.get(url)
+    nome_arquivo = url.split("/")[-1].split("?")[0]
+    caminho = os.path.join(output_path, nome_arquivo)
+
+    with open(caminho, 'wb') as f:
+        f.write(r.content)
+    print(f"✅ Download concluído: {caminho}")
 
 def main():
+    print("Escolha uma opção (1, 2 ou 3):")
     print("1 - Baixar vídeo do YouTube")
     print("2 - Baixar stories do Instagram")
     print("3 - Baixar link direto (MP4, etc.)")
-    escolha = input("Escolha uma opção (1, 2 ou 3): ")
+
+    escolha = input("Opção: ")
 
     if escolha == '1':
         url = input("Cole o link do YouTube: ")
         baixar_youtube(url)
     elif escolha == '2':
-        username = input("Digite o @ do perfil (sem o @): ")
-        baixar_instagram_story(username)
+        usuario = input("Usuário do Instagram: ")
+        senha = input("Senha: ")
+        baixar_stories(usuario, senha)
     elif escolha == '3':
-        url = input("Cole o link direto (MP4): ")
-        baixar_direto(url)
+        url = input("Cole o link direto do arquivo: ")
+        baixar_link_direto(url)
     else:
         print("❌ Opção inválida.")
 
